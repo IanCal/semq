@@ -15,7 +15,9 @@ request(Pid) ->
   Pid ! {get, self()},
   receive
     {ok, Message} ->
-      io:format("~p~n", [Message])
+      Pid ! message_received,
+      Message
     after 30000 ->
-      io:format("timeout error~n")
+      io:format("timeout error~n"),
+      {error, timeout}
   end.

@@ -1,5 +1,5 @@
 -module(messagequeue).
--export([new/0, getfrom/1]).
+-export([new/0]).
 
 new() ->
   queue([]).
@@ -9,24 +9,30 @@ queue([]) ->
     {get, PidReturn} ->
       returnnextadd(PidReturn);
     {add, Message} ->
-      queue([Message])
+      queue([Message]);
+    message_received ->
+      queue([])
   end;
 
 queue(Messages) ->
   receive 
     {get, PidReturn} ->
-      [Next | Remaining] = Messages,
+      [Next | _] = Messages,
       PidReturn ! {ok, Next},
+      queue(Messages);
+    message_received ->
+      [_ | Remaining] = Messages,
       queue(Remaining);
     {add, Message} ->
       queue(Messages ++ [Message])
   end.
 
-% Error condition if Pid is not available?
 returnnextadd(Pid) ->
   receive
     {add, Message} ->
       Pid ! {ok, Message},
+      queue([Message]);
+    message_received ->
       queue([]);
     {get, PidReturn} ->
       returnnextadd(PidReturn)
