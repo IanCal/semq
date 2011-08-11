@@ -37,9 +37,7 @@ handle_call({getqueue, QueueName}, _From, State) ->
       ets:insert(State#state.id2pid, {QueueName, Queue}),
       {reply, {ok, Queue}, State};
     [{QueueName, QueuePid}] ->
-      {reply, {ok, QueuePid}, State};
-    _ ->
-      {reply, error}
+      {reply, {ok, QueuePid}, State}
   end;
 
 handle_call({close, Pid}, _From, State) when is_pid(Pid) ->

@@ -104,4 +104,19 @@ messages_put_onto_queue_can_be_retrieved_in_correct_order_test() ->
     routing:stop(),
     ok.
 
+if_request_dies_message_remains_in_queue_test() ->
+    routing:start_link(),
+    Message = "a message to send", 
+    Queue = "queueName",
+    Pid = spawn(frontend, getrequest, [Queue]),
+    exit(Pid, "reason"),
+    frontend:postrequest("queueName", Message),
+    RecievedMessage = frontend:getrequest("queueName"),
+    ?assertEqual(
+       {ok, Message},
+       RecievedMessage),
+    routing:stop(),
+    ok.
+
+
 -endif.
