@@ -1,9 +1,0 @@
-/ebin
-/doc
-/_test
-/.eunit
-/docs
-.DS_Store
-/TEST-*.xml
-/deps
-*.swp
