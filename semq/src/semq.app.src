@@ -1,0 +1,9 @@
+%% -*- erlang -*-
+{application, semq,
+ [{description, "semq"},
+  {vsn, "0.1"},
+  {modules, []},
+  {registered, []},
+  {mod, {'semq_app', []}},
+  {env, []},
+  {applications, [kernel, stdlib, crypto]}]}.

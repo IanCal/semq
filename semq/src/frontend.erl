@@ -8,16 +8,14 @@ postrequest(QueueName, Message) ->
 
 getrequest(QueueName) ->
   {ok, Pid} = routing:getqueue(QueueName),
-  Response = request(Pid),
-  io:format("would now return to webside the response ~p~n", [Response]).
+  request(Pid).
 
 request(Pid) ->
   Pid ! {get, self()},
   receive
     {ok, Message} ->
       Pid ! message_received,
-      Message
+      {ok, Message}
     after 30000 ->
-      io:format("timeout error~n"),
       {error, timeout}
   end.
