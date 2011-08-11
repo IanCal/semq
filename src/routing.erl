@@ -2,7 +2,7 @@
 
 -module(routing).
 -behaviour(gen_server).
--export([start_link/0]).
+-export([start_link/0, stop/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -export([getqueue/1]).
 
@@ -55,7 +55,11 @@ handle_call({close, Pid}, _From, State) when is_pid(Pid) ->
             % and all id->pid
             [ ets:delete_object(State#state.id2pid, Obj) || Obj <- IdRows ]
     end,
-    {reply, ok, State}.
+    {reply, ok, State};
+
+handle_call(stop, _From, State) -> 
+    {stop, normal, ok, State}.
+
 
 
 handle_info(Info, State) ->
@@ -67,6 +71,10 @@ handle_info(Info, State) ->
       io:format("Caught unhandled message: ~w\n", [UnknownError])
   end,
   {noreply, State}.
+
+stop() ->
+    gen_server:call(?SERVER, stop).
+
 
 
 handle_cast(_Msg, State) ->

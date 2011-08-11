@@ -80,10 +80,15 @@ get_option(Option, Options) ->
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 
-you_should_write_a_test() ->
+messages_put_onto_queue_can_be_retrieved_test() ->
+    routing:start_link(),
+    Message = "a message to send", 
+    frontend:postrequest("queueName", Message),
+    RecievedMessage = frontend:getrequest("queueName"),
     ?assertEqual(
-       "No, but I will!",
-       "Have you written any tests?"),
+       {ok, Message},
+       RecievedMessage),
+    routing:stop(),
     ok.
 
 -endif.
