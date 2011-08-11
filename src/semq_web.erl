@@ -91,4 +91,17 @@ messages_put_onto_queue_can_be_retrieved_test() ->
     routing:stop(),
     ok.
 
+messages_put_onto_queue_can_be_retrieved_in_correct_order_test() ->
+    routing:start_link(),
+    Queue = "queueName",
+    Messages = ["one", "two", "three", "four"], 
+    lists:foreach(fun(M) -> frontend:postrequest(Queue, M) end, Messages),
+    RecievedMessages = lists:map(fun (_) -> frontend:getrequest(Queue) end, Messages),
+    ExpectedMessages = lists:map(fun (M) -> {ok, M} end, Messages),
+    ?assertEqual(
+       ExpectedMessages,
+       RecievedMessages),
+    routing:stop(),
+    ok.
+
 -endif.
