@@ -80,6 +80,7 @@ get_option(Option, Options) ->
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 
+
 messages_put_onto_queue_can_be_retrieved_test() ->
     routing:start_link(),
     Message = "a message to send", 
@@ -110,8 +111,24 @@ if_request_dies_message_remains_in_queue_test() ->
     Queue = "queueName",
     Pid = spawn(frontend, getrequest, [Queue]),
     exit(Pid, "reason"),
-    frontend:postrequest("queueName", Message),
-    RecievedMessage = frontend:getrequest("queueName"),
+    frontend:postrequest(Queue, Message),
+    RecievedMessage = frontend:getrequest(Queue),
+    ?assertEqual(
+       {ok, Message},
+       RecievedMessage),
+    routing:stop(),
+    ok.
+
+
+pushing_onto_queue_after_get_still_retrieves_message_test() ->
+    routing:start_link(),
+    Message = "a message to send", 
+    Queue = "queueNameNew",
+    Pid = spawn(frontend, getrequest, [Queue]),
+    timer:sleep(100),
+    frontend:postrequest(Queue, "some kind of message"),
+    frontend:postrequest(Queue, Message),
+    RecievedMessage = frontend:getrequest(Queue),
     ?assertEqual(
        {ok, Message},
        RecievedMessage),
