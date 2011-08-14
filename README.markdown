@@ -17,21 +17,25 @@ First you need erlang
 Linux:
 
 You'll need the dev package for erlang, built with ssl, and the inets package. On ubuntu:
+
     apt-get install erlang-dev erlang-inets
 
 Mac (only checked on Snow Leopard and Lion)
 
 I suggest using macports, then:
+
     port install erlang +ssl
 
 
 Now you can build semq
-    make
+
+     make
 
 
 RUNNING
 
 Simply start the dev server:
+
     ./start-dev.sh
 
 The server will be running on port 8080
@@ -39,17 +43,19 @@ The server will be running on port 8080
 
 USE
 
-There is a pre-built ruby gem for using this server at https://rubygems.org/gems/semq-client 
+There is a pre-built ruby gem for using this server at https://rubygems.org/gems/semq-client (code at https://github.com/IanCal/ruby-semq)
 
 Use as follows in two terminals:
 
 Terminal 1:
+
     irb -r rubygems
     >> require 'semq_client'
     >> queue = SemqClient.new("http://localhost:8080", "queuename")
     >> queue.pop
 
 Termanal 2:
+
     irb -r rubygems
     >> require 'semq_client'
     >> queue = SemqClient.new("http://localhost:8080", "queuename")
@@ -60,12 +66,14 @@ You should see "Hello World!" appear in terminal 1
 Other Implementations
 
 Pseudo code for a client waiting for information:
+
     while true:
       message = http.get("http://messageserver/myqueuename")
       if (message):
         onMessageCallback(message)
 
 Or an asynchronous version:
+
     function makeRequest() :
       httpRequest = http.get("http://messageserver/myqueuename") 
       httpRequest.onSuccess = onSuccess
@@ -77,5 +85,3 @@ Or an asynchronous version:
     
     function onError(result) :
       makeRequest()
-
-Example client implementations will be provided.
