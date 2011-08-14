@@ -1,5 +1,6 @@
 -module(messagequeue).
 -export([new/0]).
+-define(TIMEOUT, 300000). 
 
 new() ->
   queue([]).
@@ -12,6 +13,8 @@ queue([]) ->
       queue([Message]);
     message_received ->
       queue([])
+    after ?TIMEOUT ->
+      exit(self())
   end;
 
 queue(Messages) ->
@@ -25,6 +28,8 @@ queue(Messages) ->
       queue(Remaining);
     {add, Message} ->
       queue(Messages ++ [Message])
+    after ?TIMEOUT ->
+      exit(self())
   end.
 
 returnnextadd(Pid) ->
@@ -36,4 +41,6 @@ returnnextadd(Pid) ->
       queue([]);
     {get, PidReturn} ->
       returnnextadd(PidReturn)
+    after ?TIMEOUT ->
+      exit(self())
   end.

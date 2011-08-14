@@ -20,9 +20,7 @@ getqueue(QueueName) ->
 
 
 init([]) ->
-  % set this so we can catch death of logged in pids:
   process_flag(trap_exit, true),
-  % use ets for routing tables
   {ok, #state{
               id2pid = ets:new(?MODULE, [bag]),
               pid2id = ets:new(?MODULE, [bag])
@@ -35,6 +33,7 @@ handle_call({getqueue, QueueName}, _From, State) ->
       Queue = spawn(messagequeue, new, []),
       link(Queue),
       ets:insert(State#state.id2pid, {QueueName, Queue}),
+      ets:insert(State#state.pid2id, {Queue, QueueName}),
       {reply, {ok, Queue}, State};
     [{QueueName, QueuePid}] ->
       {reply, {ok, QueuePid}, State}
@@ -42,17 +41,9 @@ handle_call({getqueue, QueueName}, _From, State) ->
 
 handle_call({close, Pid}, _From, State) when is_pid(Pid) ->
     unlink(Pid),
-    PidRows = ets:lookup(State#state.pid2id, Pid),
-    case PidRows of
-        [] ->
-            ok;
-        _ ->
-            IdRows = [ {I,P} || {P,I} <- PidRows ], % invert tuples
-            % delete all pid->id entries
-            ets:delete(State#state.pid2id, Pid),
-            % and all id->pid
-            [ ets:delete_object(State#state.id2pid, Obj) || Obj <- IdRows ]
-    end,
+    [{Pid, Id}] = ets:lookup(State#state.pid2id, Pid),
+    ets:delete(State#state.pid2id, Pid),
+    ets:delete(State#state.id2pid, Id),
     {reply, ok, State};
 
 handle_call(stop, _From, State) -> 
@@ -63,7 +54,6 @@ handle_call(stop, _From, State) ->
 handle_info(Info, State) ->
   case Info of
     {'EXIT', Pid, _Why} ->
-     % % force logout:
       handle_call({close, Pid}, ok, State); 
     UnknownError ->
       io:format("Caught unhandled message: ~w\n", [UnknownError])

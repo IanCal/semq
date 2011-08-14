@@ -26,34 +26,25 @@ stop() ->
 get_request(Req, Queue) ->
     case frontend:getrequest(Queue) of
         {ok, Message} ->
-            Req:respond({200, [{"Content-Type", "text/plain"}],
+            Req:respond({200, headers(),
                          Message});
         {error, Reason} ->
-            Req:respond({404, [{"Content-Type", "text/plain"}],
-                         [io:format("~p~n", [Reason])]})
+            Req:respond({404, headers(),
+                         io_lib:format("~p~n", [Reason])})
     end.
 post_request(Req, Queue, Message) ->
     frontend:postrequest(Queue, Message),
     Req:respond({200, [{"Content-Type", "text/plain"}], "Posted"}).
 
-loop(Req, DocRoot) ->
+loop(Req, _DocRoot) ->
     "/" ++ Path = Req:get(path),
     try
         case Req:get(method) of
             Method when Method =:= 'GET'; Method =:= 'HEAD' ->
-                case Path of
-                    "post/" ++ MessageAndQueue ->
-                        [Queue | Message] = string:tokens(MessageAndQueue, "/"),
-                        post_request(Req, Queue, string:join(Message, "/"));
-                    Queue ->
-                        get_request(Req, Queue)
-                end;
+                get_request(Req, Path);
             'POST' ->
-                case Path of
-                    Queue ->
-                        Message = Req:recv_body(),
-                        post_request(Req, Queue, Message)
-                end;
+                Message = Req:recv_body(),
+                post_request(Req, Path, Message);
             _ ->
                 Req:respond({501, [], []})
         end
@@ -70,6 +61,9 @@ loop(Req, DocRoot) ->
     end.
 
 %% Internal API
+headers() ->
+ [{"Access-Control-Allow-Headers", "Content-Type"}, {"Access-Control-Allow-Origin", "*"}, {"Content-Type", "text/plain"}].
+
 
 get_option(Option, Options) ->
     {proplists:get_value(Option, Options), proplists:delete(Option, Options)}.
