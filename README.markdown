@@ -9,8 +9,9 @@ You are able to do two things.
 
 2) Get the next message in a queue (this will delete the message). If no queue exists it will be created.
 
-If you try and get a message from an empty queue, then the server will wait until either 20s have passed or a message is pushed onto the queue. This enables a simple client to get messages pushed to it instead of using quick polling.
+If you try and get a message from an empty queue, then the server will wait until either 30s have passed or a message is pushed onto the queue. This enables a simple client to get messages pushed to it instead of using quick polling.
 
+After 5 minutes of inactivity on a queue, it will get destroyed and any messages on it will be cleared. 
 
 INSTALLATION
 
