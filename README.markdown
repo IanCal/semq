@@ -4,7 +4,9 @@ SEMQ is a simple message queue system built in erlang. The purpose is to allow f
 
 You are able to do two things.
 
+
 1) Put a message on a named queue. If the queue does not exist, it will be created for you.
+
 2) Get the next message in a queue (this will delete the message). If no queue exists it will be created.
 
 If you try and get a message from an empty queue, then the server will wait until either 20s have passed or a message is pushed onto the queue. This enables a simple client to get messages pushed to it instead of using quick polling.
