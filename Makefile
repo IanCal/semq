@@ -1,5 +1,5 @@
-
-PREFIX:=../
+PROJECT:=semq
+PREFIX:=dist/
 DEST:=$(PREFIX)$(PROJECT)
 
 REBAR=./rebar

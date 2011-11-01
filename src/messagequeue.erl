@@ -11,7 +11,7 @@ queue([]) ->
       returnnextadd(PidReturn);
     {add, Message} ->
       queue([Message]);
-    message_received ->
+    _ ->
       queue([])
     after ?TIMEOUT ->
       exit(self())
@@ -27,7 +27,9 @@ queue(Messages) ->
       [_ | Remaining] = Messages,
       queue(Remaining);
     {add, Message} ->
-      queue(Messages ++ [Message])
+      queue(Messages ++ [Message]);
+    empty_queue ->
+      queue([])
     after ?TIMEOUT ->
       exit(self())
   end.
@@ -40,7 +42,9 @@ returnnextadd(Pid) ->
     message_received ->
       queue([]);
     {get, PidReturn} ->
-      returnnextadd(PidReturn)
+      returnnextadd(PidReturn);
+    empty_queue ->
+      queue([])
     after ?TIMEOUT ->
       exit(self())
   end.
