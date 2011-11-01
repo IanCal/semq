@@ -4,7 +4,7 @@
 -behaviour(gen_server).
 -export([start_link/0, stop/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
--export([getqueue/1]).
+-export([getqueue/1, deletequeue/1]).
 
 -import(messagequeue).
 
@@ -18,6 +18,8 @@ start_link() ->
 getqueue(QueueName) ->
   gen_server:call(?SERVER, {getqueue, QueueName}).
 
+deletequeue(QueueName) ->
+  gen_server:call(?SERVER, {deletequeue, QueueName}).
 
 init([]) ->
   process_flag(trap_exit, true),
@@ -37,6 +39,15 @@ handle_call({getqueue, QueueName}, _From, State) ->
       {reply, {ok, Queue}, State};
     [{QueueName, QueuePid}] ->
       {reply, {ok, QueuePid}, State}
+  end;
+
+handle_call({deletequeue, QueueName}, _From, State) ->
+  case ets:lookup(State#state.id2pid, QueueName) of
+    [] ->
+      {reply, ok, State};
+    [{_QueueName, QueuePid}] ->
+      QueuePid ! empty_queue,
+      {reply, ok, State}
   end;
 
 handle_call({close, Pid}, _From, State) when is_pid(Pid) ->

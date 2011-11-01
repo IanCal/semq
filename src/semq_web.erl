@@ -23,6 +23,13 @@ start(Options) ->
 stop() ->
     mochiweb_http:stop(?MODULE).
 
+head_request(Req) ->
+    Req:respond({200, headers(), ""}).
+
+delete_request(Req, Queue) -> 
+    frontend:deleterequest(Queue),
+    Req:respond({200, headers(), ""}).
+
 get_request(Req, Queue) ->
     case frontend:getrequest(Queue) of
         {ok, Message} ->
@@ -40,11 +47,15 @@ loop(Req, _DocRoot) ->
     "/" ++ Path = Req:get(path),
     try
         case Req:get(method) of
-            Method when Method =:= 'GET'; Method =:= 'HEAD' ->
+            'GET' ->
                 get_request(Req, Path);
+            'HEAD' ->
+                head_request(Req);
             'POST' ->
                 Message = Req:recv_body(),
                 post_request(Req, Path, Message);
+            'DELETE' ->
+                delete_request(Req, Path);
             _ ->
                 Req:respond({501, [], []})
         end
