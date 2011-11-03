@@ -23,11 +23,11 @@ queue(Messages) ->
       [Next | _] = Messages,
       PidReturn ! {ok, Next},
       queue(Messages);
+    {add, Message} ->
+      queue(Messages ++ [Message]);
     message_received ->
       [_ | Remaining] = Messages,
       queue(Remaining);
-    {add, Message} ->
-      queue(Messages ++ [Message]);
     empty_queue ->
       queue([])
     after ?TIMEOUT ->
@@ -36,13 +36,13 @@ queue(Messages) ->
 
 returnnextadd(Pid) ->
   receive
+    {get, PidReturn} ->
+      returnnextadd(PidReturn);
     {add, Message} ->
       Pid ! {ok, Message},
       queue([Message]);
     message_received ->
       queue([]);
-    {get, PidReturn} ->
-      returnnextadd(PidReturn);
     empty_queue ->
       queue([])
     after ?TIMEOUT ->
