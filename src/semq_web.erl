@@ -48,6 +48,8 @@ post_request(Req, Queue, Message) ->
     frontend:postrequest(Queue, Message),
     Req:respond({200, [{"Content-Type", "text/plain"}], "Posted"}).
 
+process_request("unique_queue_name", Req) ->
+    Req:respond({200, headers(), io_lib:format("~p", [crypto:rand_uniform(16#ffffffffffff, 16#ffffffffffffffff)])});
 
 process_request("queue/"++Queue, Req) ->
     case Req:get(method) of
