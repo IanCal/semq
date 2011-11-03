@@ -1,6 +1,9 @@
 -module(frontend).
 -import(routing).
--export([getrequest/1, postrequest/2, deleterequest/1]).
+-export([getrequest/1, postrequest/2, deleterequest/1, get_all_queue_names/0]).
+
+get_all_queue_names() ->
+  routing:getqueues().
 
 postrequest(QueueName, Message) ->
   {ok, Pid} = routing:getqueue(QueueName),

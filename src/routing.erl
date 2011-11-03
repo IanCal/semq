@@ -4,7 +4,7 @@
 -behaviour(gen_server).
 -export([start_link/0, stop/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
--export([getqueue/1, deletequeue/1]).
+-export([getqueue/1, deletequeue/1, getqueues/0]).
 
 -import(messagequeue).
 
@@ -14,6 +14,9 @@
 
 start_link() ->
   gen_server:start_link({global, ?MODULE}, ?MODULE, [], []).
+
+getqueues() ->
+  gen_server:call(?SERVER, {getqueues}).
 
 getqueue(QueueName) ->
   gen_server:call(?SERVER, {getqueue, QueueName}).
@@ -28,6 +31,10 @@ init([]) ->
               pid2id = ets:new(?MODULE, [bag])
              }
   }.
+
+handle_call({getqueues}, _From, State) ->
+  Queues = [QueueName || {QueueName, _} <- ets:tab2list(State#state.id2pid)],
+  {reply, {ok, Queues}, State};
 
 handle_call({getqueue, QueueName}, _From, State) ->
   case ets:lookup(State#state.id2pid, QueueName) of

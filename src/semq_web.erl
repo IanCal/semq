@@ -39,26 +39,45 @@ get_request(Req, Queue) ->
             Req:respond({404, headers(),
                          io_lib:format("~p~n", [Reason])})
     end.
+
+listqueues_request(Req) ->
+    {ok, Queues} = frontend:get_all_queue_names(),
+    Req:respond({200, headers(), io_lib:format("~p~n", [Queues])}).
+
 post_request(Req, Queue, Message) ->
     frontend:postrequest(Queue, Message),
     Req:respond({200, [{"Content-Type", "text/plain"}], "Posted"}).
 
+
+process_request("queue/"++Queue, Req) ->
+    case Req:get(method) of
+        'GET' ->
+            get_request(Req, Queue);
+        'HEAD' ->
+            head_request(Req);
+        'POST' ->
+            Message = Req:recv_body(),
+            post_request(Req, Queue, Message);
+        'DELETE' ->
+            delete_request(Req, Queue);
+        _ ->
+            Req:respond({405, [], []})
+     end;
+    
+process_request("queues", Req) ->
+    case Req:get(method) of
+        'GET' ->
+            listqueues_request(Req);
+        'HEAD' ->
+            head_request(Req);
+        _ ->
+            Req:respond({405, [], []})
+     end.
+
 loop(Req, _DocRoot) ->
     "/" ++ Path = Req:get(path),
     try
-        case Req:get(method) of
-            'GET' ->
-                get_request(Req, Path);
-            'HEAD' ->
-                head_request(Req);
-            'POST' ->
-                Message = Req:recv_body(),
-                post_request(Req, Path, Message);
-            'DELETE' ->
-                delete_request(Req, Path);
-            _ ->
-                Req:respond({501, [], []})
-        end
+        process_request(Path, Req)
     catch
         Type:What ->
             Report = ["web request failed",
