@@ -1,13 +1,15 @@
 SEMQ
 
-SEMQ is a simple message queue system built in erlang. The purpose is to allow fast push-based text communication between systems capable of basic HTTP requests. All functionality will be available to a client capable of only GET requests.
+SEMQ is a simple message queue system built in erlang. The purpose is to allow fast push-based text communication between systems capable of basic (GET and POST) HTTP requests.
 
-You are able to do two things.
+You are able to do three things.
 
 
 1) Put a message on a named queue. If the queue does not exist, it will be created for you.
 
 2) Get the next message in a queue (this will delete the message). If no queue exists it will be created.
+
+3) Get a list of all currently active queues (note : there may be no client connected to a queue)
 
 If you try and get a message from an empty queue, then the server will wait until either 30s have passed or a message is pushed onto the queue. This enables a simple client to get messages pushed to it instead of using quick polling.
 
@@ -71,14 +73,14 @@ Other Implementations
 Pseudo code for a client waiting for information:
 
     while true:
-      message = http.get("http://messageserver/myqueuename")
+      message = http.get("http://messageserver/queue/myqueuename")
       if (message):
         onMessageCallback(message)
 
 Or an asynchronous version:
 
     function makeRequest() :
-      httpRequest = http.get("http://messageserver/myqueuename") 
+      httpRequest = http.get("http://messageserver/queue/myqueuename") 
       httpRequest.onSuccess = onSuccess
       httpRequest.onError = onError
     

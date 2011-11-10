@@ -1,10 +1,19 @@
-%% @author Mochi Media <dev@mochimedia.com>
-%% @copyright 2010 Mochi Media <dev@mochimedia.com>
+% Copyright 2011 Ian Calvert
+%
+% Licensed under the Apache License, Version 2.0 (the "License");
+% you may not use this file except in compliance with the License.
+% You may obtain a copy of the License at
+%
+%     http://www.apache.org/licenses/LICENSE-2.0
+%
+% Unless required by applicable law or agreed to in writing, software
+% distributed under the License is distributed on an "AS IS" BASIS,
+% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+% See the License for the specific language governing permissions and
+% limitations under the License.
 
-%% @doc Web server for semq.
 
 -module(semq_web).
--author("Mochi Media <dev@mochimedia.com>").
 
 -export([start/1, stop/0, loop/2]).
 -import(frontend).
@@ -32,7 +41,7 @@ delete_request(Req, Queue) ->
 
 get_request(Req, Queue) ->
     case frontend:getrequest(Queue) of
-        {ok, Message} ->
+        {ok, {content_type : ContentType, message : Message}} ->
             Socket = Req:get(socket),
             case gen_tcp:recv(Socket, 0, 0) of 
               {error, 'timeout'} ->
@@ -52,7 +61,7 @@ listqueues_request(Req) ->
     Req:respond({200, headers(), io_lib:format("~p~n", [Queues])}).
 
 post_request(Req, Queue, Message) ->
-    frontend:postrequest(Queue, Message),
+    frontend:postrequest(Queue, {content_type : Req:get_header_value('content-type'), message : Message}),
     Req:respond({200, [{"Content-Type", "text/plain"}], "Posted"}).
 
 process_request("unique_queue_name", Req) ->
