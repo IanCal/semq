@@ -59,7 +59,7 @@ Terminal 1:
     >> queue = SemqClient.new("http://localhost:8080", "queuename")
     >> queue.pop
 
-Termanal 2:
+Terminal 2:
 
     irb -r rubygems
     >> require 'semq_client'
