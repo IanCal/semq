@@ -41,7 +41,7 @@ delete_request(Req, Queue) ->
 
 get_request(Req, Queue) ->
     case frontend:getrequest(Queue) of
-        {ok, {content_type : ContentType, message : Message}} ->
+        {ok, Message} ->
             Socket = Req:get(socket),
             case gen_tcp:recv(Socket, 0, 0) of 
               {error, 'timeout'} ->
@@ -50,7 +50,6 @@ get_request(Req, Queue) ->
                _ ->
                  error_logger:error_report(["client disconnected"])
              end;
-                
         {error, Reason} ->
             Req:respond({404, headers(),
                          io_lib:format("~p~n", [Reason])})
@@ -61,7 +60,7 @@ listqueues_request(Req) ->
     Req:respond({200, headers(), io_lib:format("~p~n", [Queues])}).
 
 post_request(Req, Queue, Message) ->
-    frontend:postrequest(Queue, {content_type : Req:get_header_value('content-type'), message : Message}),
+    frontend:postrequest(Queue, Message),
     Req:respond({200, [{"Content-Type", "text/plain"}], "Posted"}).
 
 process_request("unique_queue_name", Req) ->

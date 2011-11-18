@@ -38,7 +38,9 @@ request(Pid) ->
   Pid ! {get, self()},
   receive
     {ok, Message} ->
-      {ok, Message}
+      {ok, Message};
+    {error, Reason} ->
+      {error, Reason}
     after 30000 ->
       {error, timeout}
   end.

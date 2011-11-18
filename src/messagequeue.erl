@@ -74,6 +74,7 @@ returnnextadd(Pid) ->
     message_received ->
       queue([]);
     empty_queue ->
+      Pid ! {error, empty_queue},
       exit(self())
     after ?TIMEOUT ->
       exit(self())
