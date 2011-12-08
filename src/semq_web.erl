@@ -45,7 +45,8 @@ get_request(Req, Queue) ->
             Socket = Req:get(socket),
             case gen_tcp:recv(Socket, 0, 0) of 
               {error, 'timeout'} ->
-                Req:respond({200, headers(), Message}),
+                {Mimetype, MessageBody} = Message,
+                Req:respond({200, headerwithtype(Mimetype), MessageBody}),
                 frontend:removehead(Queue);
                _ ->
                  error_logger:error_report(["client disconnected"])
@@ -60,7 +61,7 @@ listqueues_request(Req) ->
     Req:respond({200, headers(), io_lib:format("~p~n", [Queues])}).
 
 post_request(Req, Queue, Message) ->
-    frontend:postrequest(Queue, Message),
+    frontend:postrequest(Queue, {Req:get_header_value("Content-Type"), Message}),
     Req:respond({200, [{"Content-Type", "text/plain"}], "Posted"}).
 
 process_request("unique_queue_name", Req) ->
@@ -80,6 +81,9 @@ process_request("queue/"++Queue, Req) ->
         'HEAD' ->
             head_request(Req);
         'POST' ->
+            Message = Req:recv_body(),
+            post_request(Req, Queue, Message);
+        'PUT' ->
             Message = Req:recv_body(),
             post_request(Req, Queue, Message);
         'DELETE' ->
@@ -118,6 +122,8 @@ loop(Req, _DocRoot) ->
 headers() ->
  [{"Access-Control-Allow-Headers", "Content-Type"}, {"Access-Control-Allow-Origin", "*"}, {"Content-Type", "text/plain"}].
 
+headerwithtype(Mimetype) ->
+ [{"Access-Control-Allow-Headers", "Content-Type"}, {"Access-Control-Allow-Origin", "*"}, {"Content-Type", Mimetype}].
 
 get_option(Option, Options) ->
     {proplists:get_value(Option, Options), proplists:delete(Option, Options)}.

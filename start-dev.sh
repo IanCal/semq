@@ -2,4 +2,4 @@
 exec erl -pa ebin edit deps/*/ebin -boot start_sasl \
     -sname semq_dev \
     -s semq \
-    -s reloader -detached
+    -s reloader +K true
