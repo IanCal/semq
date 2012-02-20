@@ -39,14 +39,23 @@ delete_request(Req, Queue) ->
     frontend:deleterequest(Queue),
     Req:respond({200, headers(), ""}).
 
+    
+respond(Req, {Mimetype, Message}, none) ->
+    Req:respond({200, headerwithtype(Mimetype), Message});
+
+respond(Req, {_Mimetype, Message}, Callback) ->
+    BinaryCallback = list_to_binary(Callback),
+    Result = <<BinaryCallback/binary, "(", Message/binary, ");">>,
+    Req:respond({200, headerwithtype("application/javascript"), Result}).
+
 get_request(Req, Queue) ->
     case frontend:getrequest(Queue) of
         {ok, Message} ->
             Socket = Req:get(socket),
             case gen_tcp:recv(Socket, 0, 0) of 
               {error, 'timeout'} ->
-                {Mimetype, MessageBody} = Message,
-                Req:respond({200, headerwithtype(Mimetype), MessageBody}),
+                Callback = proplists:get_value("jsonp", Req:parse_qs(), none),
+                respond(Req, Message, Callback),
                 frontend:removehead(Queue);
                _ ->
                  error_logger:error_report(["client disconnected"])
