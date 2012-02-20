@@ -71,7 +71,14 @@ listqueues_request(Req) ->
 
 post_request(Req, Queue, Message) ->
     frontend:postrequest(Queue, {Req:get_header_value("Content-Type"), Message}),
-    Req:respond({200, [{"Content-Type", "text/plain"}], "Posted"}).
+    Req:respond({200, headerwithtype("text/plain"), "Posted"}).
+
+crossdomain_xml(Req) ->
+    Req:respond({200, headerwithtype("text/xml"), "<?xml version=\"1.0\" ?>
+<cross-domain-policy>
+<allow-access-from domain=\"*\" />
+</cross-domain-policy>
+"}).
 
 process_request("unique_queue_name", Req) ->
     case Req:get(method) of
@@ -105,6 +112,15 @@ process_request("queues", Req) ->
     case Req:get(method) of
         'GET' ->
             listqueues_request(Req);
+        'HEAD' ->
+            head_request(Req);
+        _ ->
+            Req:respond({405, [], []})
+     end;
+process_request("crossdomain.xml", Req) ->
+    case Req:get(method) of
+        'GET' ->
+            crossdomain_xml(Req);
         'HEAD' ->
             head_request(Req);
         _ ->
