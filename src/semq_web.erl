@@ -17,12 +17,12 @@
 
 -export([start/1, stop/0, loop/2]).
 -import(frontend).
--import(routing).
+-import(gproc).
 
 %% External API
 
 start(Options) ->
-    routing:start_link(),
+    gproc:start_link(),
     {DocRoot, Options1} = get_option(docroot, Options),
     Loop = fun (Req) ->
                    ?MODULE:loop(Req, DocRoot)
@@ -159,60 +159,62 @@ get_option(Option, Options) ->
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 
+fake_get_request(Queue) ->
+    Result = frontend:getrequest(Queue),
+    io_lib:format("WHAAAAT~n",[]),
+    frontend:removehead(Queue),
+    Result.
 
-messages_put_onto_queue_can_be_retrieved_test() ->
-    routing:start_link(),
+pushing_onto_queue_after_get_still_retrieves_message_test() ->
+    gproc:start_link(),
     Message = "a message to send", 
-    frontend:postrequest("queueName", Message),
-    RecievedMessage = frontend:getrequest("queueName"),
+    Queue = "queueNameNew",
+    Pid = spawn(fun() -> fake_get_request(Queue) end),
+    timer:sleep(100),
+    frontend:postrequest(Queue, "some kind of message"),
+    frontend:postrequest(Queue, Message),
+    timer:sleep(100),
+    RecievedMessage = fake_get_request(Queue),
     ?assertEqual(
        {ok, Message},
        RecievedMessage),
-    routing:stop(),
+    ok.
+
+messages_put_onto_queue_can_be_retrieved_test() ->
+    gproc:start_link(),
+    Message = "a message to send", 
+    frontend:postrequest("queueName", Message),
+    RecievedMessage = fake_get_request("queueName"),
+    ?assertEqual(
+       {ok, Message},
+       RecievedMessage),
     ok.
 
 messages_put_onto_queue_can_be_retrieved_in_correct_order_test() ->
-    routing:start_link(),
-    Queue = "queueName",
+    gproc:start_link(),
+    Queue = "queueName2",
     Messages = ["one", "two", "three", "four"], 
     lists:foreach(fun(M) -> frontend:postrequest(Queue, M) end, Messages),
-    RecievedMessages = lists:map(fun (_) -> frontend:getrequest(Queue) end, Messages),
+    RecievedMessages = lists:map(fun (_) -> fake_get_request(Queue) end, Messages),
     ExpectedMessages = lists:map(fun (M) -> {ok, M} end, Messages),
     ?assertEqual(
        ExpectedMessages,
        RecievedMessages),
-    routing:stop(),
     ok.
 
 if_request_dies_message_remains_in_queue_test() ->
-    routing:start_link(),
+    gproc:start_link(),
     Message = "a message to send", 
     Queue = "queueName",
     Pid = spawn(frontend, getrequest, [Queue]),
     exit(Pid, "reason"),
     frontend:postrequest(Queue, Message),
-    RecievedMessage = frontend:getrequest(Queue),
+    RecievedMessage = fake_get_request(Queue),
     ?assertEqual(
        {ok, Message},
        RecievedMessage),
-    routing:stop(),
     ok.
 
-
-pushing_onto_queue_after_get_still_retrieves_message_test() ->
-    routing:start_link(),
-    Message = "a message to send", 
-    Queue = "queueNameNew",
-    Pid = spawn(frontend, getrequest, [Queue]),
-    timer:sleep(100),
-    frontend:postrequest(Queue, "some kind of message"),
-    frontend:postrequest(Queue, Message),
-    RecievedMessage = frontend:getrequest(Queue),
-    ?assertEqual(
-       {ok, Message},
-       RecievedMessage),
-    routing:stop(),
-    ok.
 
 
 -endif.

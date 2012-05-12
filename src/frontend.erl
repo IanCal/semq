@@ -13,25 +13,42 @@
 % limitations under the License.
 
 -module(frontend).
--import(routing).
--export([getrequest/1, postrequest/2, deleterequest/1, get_all_queue_names/0, removehead/1]).
+-import(messagequeue).
+-export([getrequest/1, postrequest/2, deleterequest/1, get_all_queue_names/0, removehead/1, get_queue/1]).
+
+
+get_queue(Name) ->
+   create_if_not_exist(gproc:lookup_local_name(Name), Name).
+
+create_if_not_exist(undefined, Name) ->
+   spawn(fun() ->
+                    gproc:add_local_name(Name),
+                    messagequeue:new()
+                end),
+   {Pid, _} = gproc:await({n,l,Name}),
+   {ok, Pid};
+create_if_not_exist(Pid, _Name) ->
+    {ok, Pid}.
+
+
 
 get_all_queue_names() ->
-  routing:getqueues().
+  {ok, [Name || {{_Type, _Scope, Name}, _Pid, _} <- qlc:e(gproc:table(n), [unique_all])]}.
 
 postrequest(QueueName, Message) ->
-  {ok, Pid} = routing:getqueue(QueueName),
+  {ok, Pid} = get_queue(QueueName),
   Pid ! {add, Message}.
 
 getrequest(QueueName) ->
-  {ok, Pid} = routing:getqueue(QueueName),
+  {ok, Pid} = get_queue(QueueName),
   request(Pid).
 
 deleterequest(QueueName) ->
-  routing:deletequeue(QueueName).
+  {ok, Pid} = get_queue(QueueName),
+  Pid ! empty_queue.
 
 removehead(QueueName) ->
-  {ok, Pid} = routing:getqueue(QueueName),
+  {ok, Pid} = get_queue(QueueName),
   Pid ! message_received.
 
 request(Pid) ->
