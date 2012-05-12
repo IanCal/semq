@@ -40,10 +40,10 @@ delete_request(Req, Queue) ->
     Req:respond({200, headers(), ""}).
 
     
-respond(Req, {Mimetype, Message}, none) ->
-    Req:respond({200, headerwithtype(Mimetype), Message});
+respond(Req, Code, {Mimetype, Message}, none) ->
+    Req:respond({Code, headerwithtype(Mimetype), Message});
 
-respond(Req, {_Mimetype, Message}, Callback) ->
+respond(Req, _Code, {_Mimetype, Message}, Callback) ->
     BinaryCallback = list_to_binary(Callback),
     Result = <<BinaryCallback/binary, "(", Message/binary, ");">>,
     Req:respond({200, headerwithtype("application/javascript"), Result}).
@@ -55,14 +55,14 @@ get_request(Req, Queue) ->
             case gen_tcp:recv(Socket, 0, 0) of 
               {error, 'timeout'} ->
                 Callback = proplists:get_value("jsonp", Req:parse_qs(), none),
-                respond(Req, Message, Callback),
+                respond(Req, 200, Message, Callback),
                 frontend:removehead(Queue);
                _ ->
                  error_logger:error_report(["client disconnected"])
              end;
-        {error, Reason} ->
-            Req:respond({404, headers(),
-                         io_lib:format("~p~n", [Reason])})
+        {error, _Reason} ->
+            Callback = proplists:get_value("jsonp", Req:parse_qs(), none),
+            respond(Req, 404, {"application/javascript", <<>>}, Callback)
     end.
 
 listqueues_request(Req) ->
