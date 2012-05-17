@@ -1,9 +1,11 @@
-%% -*- erlang -*-
+%% This is the application resource file (.app file) for the,
+%% application.
 {application, semq,
- [{description, "semq"},
-  {vsn, "0.1"},
-  {modules, []},
-  {registered, []},
-  {mod, {'semq_app', []}},
-  {env, []},
-  {applications, [kernel, stdlib, crypto]}]}.
+  [{description, "Your Desc HERE"},
+   {vsn, "0.2.0"},
+   {modules, [semq_app,
+              semq_sup]},
+   {registered,[semq_sup]},
+   {applications, [kernel, stdlib, crypto, cowboy, gproc]},
+   {mod, {semq_app,[]}},
+   {start_phases, []}]}.

@@ -1,56 +1,43 @@
-%% @author Mochi Media <dev@mochimedia.com>
-%% @copyright 2010 Mochi Media <dev@mochimedia.com>
-
-%% @doc Supervisor for the semq application.
-
+%%%----------------------------------------------------------------
+%%% @author  Ian Calvert <ianjcalvert@gmail.com>
+%%% @doc
+%%% @end
+%%% @copyright 2012 Ian Calvert
+%%%----------------------------------------------------------------
 -module(semq_sup).
--author("Mochi Media <dev@mochimedia.com>").
-
 -behaviour(supervisor).
 
-%% External exports
--export([start_link/0, upgrade/0]).
+%% API
+-export([start_link/0]).
 
-%% supervisor callbacks
+%% Supervisor callbacks
 -export([init/1]).
 
-%% @spec start_link() -> ServerRet
-%% @doc API for starting the supervisor.
+-define(SERVER, ?MODULE).
+
+%%%===================================================================
+%%% API functions
+%%%===================================================================
+
+-spec start_link() -> {ok, pid()} | any().
 start_link() ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+    supervisor:start_link({local, ?SERVER}, ?MODULE, []).
 
-%% @spec upgrade() -> ok
-%% @doc Add processes if necessary.
-upgrade() ->
-    {ok, {_, Specs}} = init([]),
+%%%===================================================================
+%%% Supervisor callbacks
+%%%===================================================================
 
-    Old = sets:from_list(
-            [Name || {Name, _, _, _} <- supervisor:which_children(?MODULE)]),
-    New = sets:from_list([Name || {Name, _, _, _, _, _} <- Specs]),
-    Kill = sets:subtract(Old, New),
 
-    sets:fold(fun (Id, ok) ->
-                      supervisor:terminate_child(?MODULE, Id),
-                      supervisor:delete_child(?MODULE, Id),
-                      ok
-              end, ok, Kill),
-
-    [supervisor:start_child(?MODULE, Spec) || Spec <- Specs],
-    ok.
-
-%% @spec init([]) -> SupervisorTree
-%% @doc supervisor callback.
+%% @private
+-spec init(list()) -> {ok, {SupFlags::any(), [ChildSpec::any()]}} |
+                       ignore | {error, Reason::any()}.
 init([]) ->
-    Web = web_specs(semq_web, 8080),
-    Processes = [Web],
-    Strategy = {one_for_one, 10, 10},
-    {ok,
-     {Strategy, lists:flatten(Processes)}}.
+  {ok, {{one_for_one, 10, 10}, []}}.
 
-web_specs(Mod, Port) ->
-    WebConfig = [{ip, {0,0,0,0}},
-                 {port, Port},
-                 {docroot, semq_deps:local_path(["priv", "www"])}],
-    {Mod,
-     {Mod, start, [WebConfig]},
-     permanent, 5000, worker, dynamic}.
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
+%%%====================================================================
+%%% tests
+%%%====================================================================

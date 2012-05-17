@@ -14,144 +14,50 @@
 
 
 -module(semq_web).
+-behaviour(cowboy_http_handler).
 
--export([start/1, stop/0, loop/2]).
 -import(frontend).
 -import(gproc).
 
+
+-export([init/3, handle/2, terminate/2]).
+
+init({_Any, http}, Req, []) ->
+	{ok, Req, undefined}.
+
+
+
+extract_queue_name([<<"queue">> | [Queue | _]]) ->
+  {ok, Queue};
+  
+extract_queue_name([_Key | [_Value | Remainder]]) ->
+  extract_queue_name(Remainder);
+
+extract_queue_name(_) ->
+  {error, "No queue name in URL"}.
+
+queue_access('GET', Queue, _Req) ->
+  frontend:getrequest(Queue);
+
+queue_access('POST', Queue, Req) ->
+  {ok, Body, _Req} = cowboy_http_req:body(Req),
+  frontend:postrequest(Queue, Body),
+  {ok, <<"Posted">>}.
+
+handle(Req, State) ->
+  {Path, Req} = cowboy_http_req:path(Req),
+  {ok, Queue} = extract_queue_name(Path),
+  {Method, Req} = cowboy_http_req:method(Req),
+  {ok, Message} = queue_access(Method, Queue, Req),
+	{ok, Req2} = cowboy_http_req:reply(200, [], Message, Req),
+	{ok, Req2, State}.
+
+terminate(_Req, _State) ->
+	ok.
+
+
+
 %% External API
-
-start(Options) ->
-    gproc:start_link(),
-    {DocRoot, Options1} = get_option(docroot, Options),
-    Loop = fun (Req) ->
-                   ?MODULE:loop(Req, DocRoot)
-           end,
-    mochiweb_http:start([{name, ?MODULE}, {loop, Loop} | Options1]).
-
-stop() ->
-    mochiweb_http:stop(?MODULE).
-
-head_request(Req) ->
-    Req:respond({200, headers(), ""}).
-
-delete_request(Req, Queue) -> 
-    frontend:deleterequest(Queue),
-    Req:respond({200, headers(), ""}).
-
-    
-respond(Req, Code, {Mimetype, Message}, none) ->
-    Req:respond({Code, headerwithtype(Mimetype), Message});
-
-respond(Req, _Code, {_Mimetype, Message}, Callback) ->
-    BinaryCallback = list_to_binary(Callback),
-    Result = <<BinaryCallback/binary, "(", Message/binary, ");">>,
-    Req:respond({200, headerwithtype("application/javascript"), Result}).
-
-get_request(Req, Queue) ->
-    case frontend:getrequest(Queue) of
-        {ok, Message} ->
-            Socket = Req:get(socket),
-            case gen_tcp:recv(Socket, 0, 0) of 
-              {error, 'timeout'} ->
-                Callback = proplists:get_value("jsonp", Req:parse_qs(), none),
-                respond(Req, 200, Message, Callback),
-                frontend:removehead(Queue);
-               _ ->
-                 error_logger:error_report(["client disconnected"])
-             end;
-        {error, _Reason} ->
-            Callback = proplists:get_value("jsonp", Req:parse_qs(), none),
-            respond(Req, 404, {"application/javascript", <<>>}, Callback)
-    end.
-
-listqueues_request(Req) ->
-    {ok, Queues} = frontend:get_all_queue_names(),
-    Req:respond({200, headers(), io_lib:format("~p~n", [Queues])}).
-
-post_request(Req, Queue, Message) ->
-    frontend:postrequest(Queue, {Req:get_header_value("Content-Type"), Message}),
-    Req:respond({200, headerwithtype("text/plain"), "Posted"}).
-
-crossdomain_xml(Req) ->
-    Req:respond({200, headerwithtype("text/xml"), "<?xml version=\"1.0\" ?>
-<cross-domain-policy>
-<allow-access-from domain=\"*\" />
-</cross-domain-policy>
-"}).
-
-process_request("unique_queue_name", Req) ->
-    case Req:get(method) of
-        'GET' ->
-            Req:respond({200, headers(), io_lib:format("~p", [crypto:rand_uniform(16#ffffffffffff, 16#ffffffffffffffff)])});
-        'HEAD' ->
-            head_request(Req);
-         _ ->
-            Req:respond({405, [], []})
-    end;
-
-process_request("queue/"++Queue, Req) ->
-    case Req:get(method) of
-        'GET' ->
-            get_request(Req, Queue);
-        'HEAD' ->
-            head_request(Req);
-        'POST' ->
-            Message = Req:recv_body(),
-            post_request(Req, Queue, Message);
-        'PUT' ->
-            Message = Req:recv_body(),
-            post_request(Req, Queue, Message);
-        'DELETE' ->
-            delete_request(Req, Queue);
-        _ ->
-            Req:respond({405, [], []})
-     end;
-    
-process_request("queues", Req) ->
-    case Req:get(method) of
-        'GET' ->
-            listqueues_request(Req);
-        'HEAD' ->
-            head_request(Req);
-        _ ->
-            Req:respond({405, [], []})
-     end;
-process_request("crossdomain.xml", Req) ->
-    case Req:get(method) of
-        'GET' ->
-            crossdomain_xml(Req);
-        'HEAD' ->
-            head_request(Req);
-        _ ->
-            Req:respond({405, [], []})
-     end.
-
-loop(Req, _DocRoot) ->
-    "/" ++ Path = Req:get(path),
-    try
-        process_request(Path, Req)
-    catch
-        Type:What ->
-            Report = ["web request failed",
-                      {path, Path},
-                      {type, Type}, {what, What},
-                      {trace, erlang:get_stacktrace()}],
-            error_logger:error_report(Report),
-            %% NOTE: mustache templates need \ because they are not awesome.
-            Req:respond({500, [{"Content-Type", "text/plain"}],
-                         "request failed, sorry\n"})
-    end.
-
-%% Internal API
-headers() ->
- [{"Access-Control-Allow-Headers", "Content-Type"}, {"Access-Control-Allow-Origin", "*"}, {"Content-Type", "text/plain"}].
-
-headerwithtype(Mimetype) ->
- [{"Access-Control-Allow-Headers", "Content-Type"}, {"Access-Control-Allow-Origin", "*"}, {"Content-Type", Mimetype}].
-
-get_option(Option, Options) ->
-    {proplists:get_value(Option, Options), proplists:delete(Option, Options)}.
 
 %%
 %% Tests

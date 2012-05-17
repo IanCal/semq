@@ -1,22 +1,42 @@
-%% @author Mochi Media <dev@mochimedia.com>
-%% @copyright semq Mochi Media <dev@mochimedia.com>
-
-%% @doc Callbacks for the semq application.
-
+%%%----------------------------------------------------------------
+%%% @author  Ian Calvert <ianjcalvert@gmail.com>
+%%% @doc
+%%% @end
+%%% @copyright 2012 Ian Calvert
+%%%----------------------------------------------------------------
 -module(semq_app).
--author("Mochi Media <dev@mochimedia.com>").
 
 -behaviour(application).
--export([start/2,stop/1]).
+
+%% Application callbacks
+-export([start/2, stop/1]).
+
+%%%===================================================================
+%%% Application callbacks
+%%%===================================================================
 
 
-%% @spec start(_Type, _StartArgs) -> ServerRet
-%% @doc application start callback for semq.
-start(_Type, _StartArgs) ->
-    semq_deps:ensure(),
-    semq_sup:start_link().
+%% @private
+-spec start(normal | {takeover, node()} | {failover, node()},
+            any()) -> {ok, pid()} | {ok, pid(), State::any()} |
+                      {error, Reason::any()}.
+start(_StartType, _StartArgs) ->
+    Dispatch = [
+        %% {Host, list({Path, Handler, Opts})}
+        {'_', [{['...'], semq_web, []}]}
+    ],
+      
+    cowboy:start_listener(web_frontend, 100,
+      cowboy_tcp_transport, [{port, 8080}],
+      cowboy_http_protocol, [{dispatch, Dispatch}]
+    ),
+   semq_sup:start_link().
 
-%% @spec stop(_State) -> ServerRet
-%% @doc application stop callback for semq.
+%% @private
+-spec stop(State::any()) -> ok.
 stop(_State) ->
     ok.
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
