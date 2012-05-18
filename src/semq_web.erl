@@ -36,20 +36,50 @@ extract_queue_name([_Key | [_Value | Remainder]]) ->
 extract_queue_name(_) ->
   {error, "No queue name in URL"}.
 
-queue_access('GET', Queue, _Req) ->
-  frontend:getrequest(Queue);
+queue_get_head(Queue, Req) ->
+  case frontend:getrequest(Queue) of
+        {ok, {Type, Message}} ->
+            {ok, _Transport, Socket} = cowboy_http_req:transport(Req),
+            case gen_tcp:recv(Socket, 0, 0) of 
+              {error, 'timeout'} ->
+                frontend:removehead(Queue),
+                {ok, {Type, Message}, Req};
+               _ ->
+                 error_logger:error_report(["client disconnected"])
+             end;
+        {error, Reason} ->
+            {error, Reason}
+    end.
 
-queue_access('POST', Queue, Req) ->
+
+queue_post(Queue, Req) ->
   {ok, Body, _Req} = cowboy_http_req:body(Req),
-  frontend:postrequest(Queue, Body),
-  {ok, <<"Posted">>}.
+  {Type, Req2} = cowboy_http_req:header('Content-Type', Req),
+  post_message(Queue, Body, Type, Req2).
 
-handle(Req, State) ->
+post_message(Queue, Body, undefined, Req) ->
+  post_message(Queue, Body, <<"text/plain">>, Req);
+
+post_message(Queue, Body, Type, Req) ->
+  frontend:postrequest(Queue, {Type, Body}),
+  {ok, {<<"text/plain">>, <<"Posted">>}, Req}.
+
+handle_method('GET', Req) ->
   {Path, Req} = cowboy_http_req:path(Req),
   {ok, Queue} = extract_queue_name(Path),
+  {ok, {Type, Message}, Req2} = queue_get_head(Queue, Req),
+	cowboy_http_req:reply(200, [], Message, Req);
+  
+
+handle_method('POST', Req) ->
+  {Path, Req} = cowboy_http_req:path(Req),
+  {ok, Queue} = extract_queue_name(Path),
+  {ok, {Type, Message}, Req2} = queue_post(Queue, Req),
+	cowboy_http_req:reply(200, [], Message, Req2).
+
+handle(Req, State) ->
   {Method, Req} = cowboy_http_req:method(Req),
-  {ok, Message} = queue_access(Method, Queue, Req),
-	{ok, Req2} = cowboy_http_req:reply(200, [], Message, Req),
+  {ok, Req2} = handle_method(Method, Req),
 	{ok, Req2, State}.
 
 terminate(_Req, _State) ->
