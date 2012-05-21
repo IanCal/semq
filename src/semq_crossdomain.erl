@@ -13,10 +13,12 @@
 % limitations under the License.
 
 
--module(semq_queuelist).
+-module(semq_crossdomain).
 -behaviour(cowboy_http_handler).
 
 -import(frontend).
+-import(gproc).
+
 
 -export([init/3, handle/2, terminate/2]).
 
@@ -26,9 +28,15 @@ init({_Any, http}, Req, []) ->
 
 
 handle(Req, State) ->
-  {ok, Queues} =  frontend:get_all_queue_names(),
-  {ok, Req2} = cowboy_http_req:reply(200, [], io_lib:format(<<"~p~n">>, [Queues]), Req),
+  {ok, Req2} = cowboy_http_req:reply(200, headerswithtype("text/xml"), <<"<?xml version=\"1.0\" ?>
+<cross-domain-policy>
+<allow-access-from domain=\"*\" />
+</cross-domain-policy>
+">>, Req),
 	{ok, Req2, State}.
+
+headerswithtype(Mimetype) ->
+ [{<<"Access-Control-Allow-Headers">>, <<"Content-Type">>}, {<<"Access-Control-Allow-Origin">>, <<"*">>}, {<<"Content-Type">>, Mimetype}].
 
 terminate(_Req, _State) ->
 	ok.

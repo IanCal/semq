@@ -24,6 +24,8 @@ start(_StartType, _StartArgs) ->
     Dispatch = [
         %% {Host, list({Path, Handler, Opts})}
         {'_', [
+          {[<<"favicon.ico">>], semq_favicon, []},
+          {[<<"crossdomain.xml">>], semq_crossdomain, []},
           {[<<"queues">>], semq_queuelist, []},
           {['...'], semq_web, []}
           ]}

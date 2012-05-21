@@ -52,6 +52,9 @@ queue_get_head(Queue, Req) ->
     end.
 
 
+queue_delete(Queue) ->
+  frontend:deleterequest(Queue).
+
 queue_post(Queue, Req) ->
   {ok, Body, _Req} = cowboy_http_req:body(Req),
   {Type, Req2} = cowboy_http_req:header('Content-Type', Req),
@@ -63,7 +66,6 @@ post_message(Queue, Body, undefined, Req) ->
 post_message(Queue, Body, Type, Req) ->
   frontend:postrequest(Queue, {Type, Body}),
   {ok, {<<"text/plain">>, <<"Posted">>}, Req}.
-
 
 jsonp_wrapper(undefined, MimeType, Body) ->
   {MimeType, Body};
@@ -87,12 +89,20 @@ handle_method('GET', Req) ->
   {ok, {Type, Message}, Req2} = queue_get_head(Queue, Req),
   reply(200, Type, Message, Req2);
   
-
 handle_method('POST', Req) ->
   {Path, Req} = cowboy_http_req:path(Req),
   {ok, Queue} = extract_queue_name(Path),
   {ok, {Type, Message}, Req2} = queue_post(Queue, Req),
-	cowboy_http_req:reply(200, headerswithtype(Type), Message, Req2).
+	cowboy_http_req:reply(200, headerswithtype(Type), Message, Req2);
+
+handle_method('HEAD', Req) ->
+	cowboy_http_req:reply(200, headerswithtype(<<"text/plain">>), <<"">>, Req);
+
+handle_method('DELETE', Req) ->
+  {Path, Req} = cowboy_http_req:path(Req),
+  {ok, Queue} = extract_queue_name(Path),
+  queue_delete(Queue),
+	cowboy_http_req:reply(200, headerswithtype(<<"text/plain">>), <<"deleted">>, Req).
 
 handle(Req, State) ->
   {Method, Req} = cowboy_http_req:method(Req),
