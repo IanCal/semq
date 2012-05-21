@@ -23,7 +23,10 @@
 start(_StartType, _StartArgs) ->
     Dispatch = [
         %% {Host, list({Path, Handler, Opts})}
-        {'_', [{['...'], semq_web, []}]}
+        {'_', [
+          {[<<"queues">>], semq_queuelist, []},
+          {['...'], semq_web, []}
+          ]}
     ],
       
     cowboy:start_listener(web_frontend, 100,
