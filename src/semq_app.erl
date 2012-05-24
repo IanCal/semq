@@ -9,7 +9,7 @@
 -behaviour(application).
 
 %% Application callbacks
--export([start/2, stop/1]).
+-export([start/2, stop/1, get_port/0]).
 
 %%%===================================================================
 %%% Application callbacks
@@ -32,10 +32,19 @@ start(_StartType, _StartArgs) ->
     ],
       
     cowboy:start_listener(web_frontend, 100,
-      cowboy_tcp_transport, [{port, 8080}],
+      cowboy_tcp_transport, [{port, get_port()}],
       cowboy_http_protocol, [{dispatch, Dispatch}]
     ),
    semq_sup:start_link().
+
+get_port() ->
+   parse_port(init:get_argument(port)).
+
+parse_port(error) ->
+   8080;
+parse_port({ok,[[Port]]}) ->
+   {PortNumber, []} = string:to_integer(Port),
+   PortNumber.
 
 %% @private
 -spec stop(State::any()) -> ok.
