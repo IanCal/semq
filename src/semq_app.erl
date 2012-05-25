@@ -27,11 +27,13 @@ start(_StartType, _StartArgs) ->
           {[<<"favicon.ico">>], semq_favicon, []},
           {[<<"crossdomain.xml">>], semq_crossdomain, []},
           {[<<"queues">>], semq_queuelist, []},
+          {[<<"index.html">>], semq_indexpage, []},
+          {[], semq_indexpage, []},
           {['...'], semq_web, []}
           ]}
     ],
       
-    cowboy:start_listener(web_frontend, 100,
+    cowboy:start_listener(web_frontend, 10000,
       cowboy_tcp_transport, [{port, get_port()}],
       cowboy_http_protocol, [{dispatch, Dispatch}]
     ),

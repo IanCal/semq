@@ -67,17 +67,17 @@ post_message(Queue, Body, Type, Req) ->
   frontend:postrequest(Queue, {Type, Body}),
   {ok, {<<"text/plain">>, <<"Posted">>}, Req}.
 
-jsonp_wrapper(undefined, MimeType, Body) ->
-  {MimeType, Body};
+jsonp_wrapper(Status, undefined, MimeType, Body) ->
+  {Status, MimeType, Body};
 
-jsonp_wrapper(Callback, _MimeType, Body) ->
+jsonp_wrapper(_Status, Callback, _MimeType, Body) ->
   Result = <<Callback/binary, "(", Body/binary, ");">>,
-  {<<"application/javascript">>, Result}.
+  {200, <<"application/javascript">>, Result}.
 
 reply(Status, MimeType, Body, Req) ->
   {Callback, Req2} = cowboy_http_req:qs_val(<<"jsonp">>, Req),
-  {MimeType2, WrappedBody} = jsonp_wrapper(Callback, MimeType, Body),
-  cowboy_http_req:reply(Status, headerswithtype(MimeType2), WrappedBody, Req2).
+  {Status2, MimeType2, WrappedBody} = jsonp_wrapper(Status, Callback, MimeType, Body),
+  cowboy_http_req:reply(Status2, headerswithtype(MimeType2), WrappedBody, Req2).
 
 headerswithtype(Mimetype) ->
  [{<<"Access-Control-Allow-Headers">>, <<"Content-Type">>}, {<<"Access-Control-Allow-Origin">>, <<"*">>}, {<<"Content-Type">>, Mimetype}].
@@ -86,8 +86,12 @@ headerswithtype(Mimetype) ->
 handle_method('GET', Req) ->
   {Path, Req} = cowboy_http_req:path(Req),
   {ok, Queue} = extract_queue_name(Path),
-  {ok, {Type, Message}, Req2} = queue_get_head(Queue, Req),
-  reply(200, Type, Message, Req2);
+  case queue_get_head(Queue, Req) of
+    {ok, {Type, Message}, Req2} ->
+      reply(200, Type, Message, Req2);
+    _ ->
+      reply(404, <<"text/plain">>, <<"">>, Req)
+  end;
   
 handle_method('POST', Req) ->
   {Path, Req} = cowboy_http_req:path(Req),
