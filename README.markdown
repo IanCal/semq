@@ -1,38 +1,38 @@
-SEMQ
+#SEMQ#
 
 SEMQ is a simple message queue system built in erlang. The purpose is to allow fast communication between systems capable of basic (GET and POST) HTTP requests.
 
-API
+##API##
 
 For a single queue
 
-HTTP POST    to http://semqserver:port/queue/my_awesome_queue_name
-      - put the body and mimetype on the queue
-HTTP POST    to http://semqserver:port/queue/my_awesome_queue_name/queue/my_other_awesome_queue_name
-      - put the body and mimetype on both queues
-
-HTTP GET     to http://semqserver:port/queue/my_awesome_queue_name 
-      - get the next item on the queue, served with the same mimetype as used in the POST
-      - if there is nothing in the queue, wait for 30 seconds then return a 404
-HTTP GET     to http://semqserver:port/queue/my_awesome_queue_name?jsonp=callbackName 
-      - get the next item on the queue, served with application/javascript, containing callbackName(messageBody);
-      - if there is nothing in the queue, wait for 30 seconds then return a 200 containing callbackName();
-
-HTTP DELETE  to http://semqserver:port/queue/my_awesome_queue_name
-      - will delete the queue and all messages on it
-
-Other endpoints
-
-HTTP GET     to http://semqserver:port/queues
-      - get a list of all queues currently running on the server
-
-HTTP GET     to http://semqserver:port/
-      - show a welcome screen
-
-HTTP GET     to http://semqserver:port/crossdomain.xml
-      - return a crossdomain file for actionscript, allowing connections forom any server
-
-NOTES
+    HTTP POST    to http://semqserver:port/queue/my_awesome_queue_name
+          - put the body and mimetype on the queue
+    HTTP POST    to http://semqserver:port/queue/my_awesome_queue_name/queue/my_other_awesome_queue_name
+          - put the body and mimetype on both queues
+    
+    HTTP GET     to http://semqserver:port/queue/my_awesome_queue_name 
+          - get the next item on the queue, served with the same mimetype as used in the POST
+          - if there is nothing in the queue, wait for 30 seconds then return a 404
+    HTTP GET     to http://semqserver:port/queue/my_awesome_queue_name?jsonp=callbackName 
+          - get the next item on the queue, served with application/javascript, containing callbackName(messageBody);
+          - if there is nothing in the queue, wait for 30 seconds then return a 200 containing callbackName();
+    
+    HTTP DELETE  to http://semqserver:port/queue/my_awesome_queue_name
+          - will delete the queue and all messages on it
+    
+    Other endpoints
+    
+    HTTP GET     to http://semqserver:port/queues
+          - get a list of all queues currently running on the server
+    
+    HTTP GET     to http://semqserver:port/
+          - show a welcome screen
+    
+    HTTP GET     to http://semqserver:port/crossdomain.xml
+          - return a crossdomain file for actionscript, allowing connections forom any server
+    
+##NOTES##
 
 To create a queue, simply use it. If it doesn't exist it'll be created for you.
 
@@ -44,27 +44,29 @@ You are not restricted to using text, all data is considered binary so you can e
 
 Only one client should *listen* to a queue at the same time. Many people can post to a queue at the same time.
 
-INSTALLATION
+##INSTALLATION##
 
 For mac and linux, there are binaries available on the downloads page.
 
-COMPILATION
+##COMPILATION##
 
 I use sinan to compile the application. Install erlang, cowboy (tested on 0.4.0 -> 0.6.0) and gproc, and run
 
-> sinan release
+    > sinan release
 
 You'll find semq in _build/semq/bin
 
-RUNNING
+##RUNNING##
 
 Unzip to wherever you want and run 
 
-> bin/semq -detached -port 8080 
+    > bin/semq -detached -port 8080 
 
 Then check it's running at http://localhost:8080/
 
-USE
+##USE##
+
+####Ruby####
 
 There is a pre-built ruby gem for using this server at https://rubygems.org/gems/semq-client (code at https://github.com/IanCal/ruby-semq)
 
@@ -86,7 +88,7 @@ Terminal 2:
 
 You should see "Hello World!" appear in terminal 1
 
-Other Implementations
+####Other Implementations####
 
 Pseudo code for a client waiting for information:
 
