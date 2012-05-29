@@ -21,7 +21,7 @@ For a single queue
     HTTP DELETE  to http://semqserver:port/queue/my_awesome_queue_name
           - will delete the queue and all messages on it
     
-    Other endpoints
+Other endpoints
     
     HTTP GET     to http://semqserver:port/queues
           - get a list of all queues currently running on the server
