@@ -1,50 +1,68 @@
 SEMQ
 
-SEMQ is a simple message queue system built in erlang. The purpose is to allow fast push-based text communication between systems capable of basic (GET and POST) HTTP requests.
+SEMQ is a simple message queue system built in erlang. The purpose is to allow fast communication between systems capable of basic (GET and POST) HTTP requests.
 
-You are able to do three things.
+API
 
+For a single queue
 
-1) Put a message on a named queue. If the queue does not exist, it will be created for you.
+HTTP POST    to http://semqserver:port/queue/my_awesome_queue_name
+      - put the body and mimetype on the queue
+HTTP POST    to http://semqserver:port/queue/my_awesome_queue_name/queue/my_other_awesome_queue_name
+      - put the body and mimetype on both queues
 
-2) Get the next message in a queue (this will delete the message). If no queue exists it will be created.
+HTTP GET     to http://semqserver:port/queue/my_awesome_queue_name 
+      - get the next item on the queue, served with the same mimetype as used in the POST
+      - if there is nothing in the queue, wait for 30 seconds then return a 404
+HTTP GET     to http://semqserver:port/queue/my_awesome_queue_name?jsonp=callbackName 
+      - get the next item on the queue, served with application/javascript, containing callbackName(messageBody);
+      - if there is nothing in the queue, wait for 30 seconds then return a 200 containing callbackName();
 
-3) Get a list of all currently active queues (note : there may be no client connected to a queue)
+HTTP DELETE  to http://semqserver:port/queue/my_awesome_queue_name
+      - will delete the queue and all messages on it
 
-If you try and get a message from an empty queue, then the server will wait until either 30s have passed or a message is pushed onto the queue. This enables a simple client to get messages pushed to it instead of using quick polling.
+Other endpoints
+
+HTTP GET     to http://semqserver:port/queues
+      - get a list of all queues currently running on the server
+
+HTTP GET     to http://semqserver:port/
+      - show a welcome screen
+
+HTTP GET     to http://semqserver:port/crossdomain.xml
+      - return a crossdomain file for actionscript, allowing connections forom any server
+
+NOTES
+
+To create a queue, simply use it. If it doesn't exist it'll be created for you.
 
 After 5 minutes of inactivity on a queue, it will get destroyed and any messages on it will be cleared. 
 
+There is no chunking, so the maximum size of an item is 1MB.
+
+You are not restricted to using text, all data is considered binary so you can easily drop images or whatever you want on the queues. Just make sure the other side knows what to expect!
+
+Only one client should *listen* to a queue at the same time. Many people can post to a queue at the same time.
+
 INSTALLATION
 
-First you need erlang
+For mac and linux, there are binaries available on the downloads page.
 
-Linux:
+COMPILATION
 
-You'll need the dev package for erlang, built with ssl, and the inets package. On ubuntu:
+I use sinan to compile the application. Install erlang, cowboy (tested on 0.4.0 -> 0.6.0) and gproc, and run
 
-    apt-get install erlang-dev erlang-inets
+> sinan release
 
-Mac (only checked on Snow Leopard and Lion)
-
-I suggest using macports, then:
-
-    port install erlang +ssl
-
-
-Now you can build semq
-
-     make
-
+You'll find semq in _build/semq/bin
 
 RUNNING
 
-Simply start the dev server:
+Unzip to wherever you want and run 
 
-    ./start-dev.sh
+> bin/semq -detached -port 8080 
 
-The server will be running on port 8080
-
+Then check it's running at http://localhost:8080/
 
 USE
 
