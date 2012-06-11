@@ -5,7 +5,6 @@
 %%% @copyright 2012 Ian Calvert
 %%%----------------------------------------------------------------
 -module(semq_app).
-
 -behaviour(application).
 
 %% Application callbacks
@@ -33,7 +32,7 @@ start(_StartType, _StartArgs) ->
           ]}
     ],
       
-    cowboy:start_listener(web_frontend, 10000,
+    cowboy:start_listener(web_frontend, 100,
       cowboy_tcp_transport, [{port, get_port()}],
       cowboy_http_protocol, [{dispatch, Dispatch}]
     ),

@@ -26,15 +26,20 @@ init({_Any, http}, Req, []) ->
 	{ok, Req, undefined}.
 
 
+extract_queue_names(PathFragments) ->
+  extract_queue_names(PathFragments, []).
 
-extract_queue_name([<<"queue">> | [Queue | _]]) ->
-  {ok, Queue};
+extract_queue_names([<<"queue">> | [Queue | Remainder]], Queues) ->
+  extract_queue_names(Remainder, [Queue | Queues]);
   
-extract_queue_name([_Key | [_Value | Remainder]]) ->
-  extract_queue_name(Remainder);
+extract_queue_names([_Key | [_Value | Remainder]], Queues) ->
+  extract_queue_names(Remainder, Queues);
 
-extract_queue_name(_) ->
-  {error, "No queue name in URL"}.
+extract_queue_names(_, []) ->
+  {error, "No queue name in URL"};
+
+extract_queue_names(_, Queues) ->
+  {ok, Queues}.
 
 queue_get_head(Queue, Req) ->
   case frontend:getrequest(Queue) of
@@ -52,19 +57,19 @@ queue_get_head(Queue, Req) ->
     end.
 
 
-queue_delete(Queue) ->
-  frontend:deleterequest(Queue).
+queue_delete(Queues) ->
+  lists:foreach(fun frontend:deleterequest/1, Queues).
 
-queue_post(Queue, Req) ->
+queue_post(Queues, Req) ->
   {ok, Body, _Req} = cowboy_http_req:body(Req),
   {Type, Req2} = cowboy_http_req:header('Content-Type', Req),
-  post_message(Queue, Body, Type, Req2).
+  post_message(Queues, Body, Type, Req2).
 
-post_message(Queue, Body, undefined, Req) ->
-  post_message(Queue, Body, <<"text/plain">>, Req);
+post_message(Queues, Body, undefined, Req) ->
+  post_message(Queues, Body, <<"text/plain">>, Req);
 
-post_message(Queue, Body, Type, Req) ->
-  frontend:postrequest(Queue, {Type, Body}),
+post_message(Queues, Body, Type, Req) ->
+  lists:foreach(fun (Queue) -> frontend:postrequest(Queue, {Type, Body}) end, Queues),
   {ok, {<<"text/plain">>, <<"Posted">>}, Req}.
 
 jsonp_wrapper(Status, undefined, MimeType, Body) ->
@@ -85,7 +90,7 @@ headerswithtype(Mimetype) ->
 
 handle_method('GET', Req) ->
   {Path, Req} = cowboy_http_req:path(Req),
-  {ok, Queue} = extract_queue_name(Path),
+  {ok, [Queue]} = extract_queue_names(Path),
   case queue_get_head(Queue, Req) of
     {ok, {Type, Message}, Req2} ->
       reply(200, Type, Message, Req2);
@@ -95,8 +100,8 @@ handle_method('GET', Req) ->
   
 handle_method('POST', Req) ->
   {Path, Req} = cowboy_http_req:path(Req),
-  {ok, Queue} = extract_queue_name(Path),
-  {ok, {Type, Message}, Req2} = queue_post(Queue, Req),
+  {ok, Queues} = extract_queue_names(Path),
+  {ok, {Type, Message}, Req2} = queue_post(Queues, Req),
 	cowboy_http_req:reply(200, headerswithtype(Type), Message, Req2);
 
 handle_method('HEAD', Req) ->
@@ -104,8 +109,8 @@ handle_method('HEAD', Req) ->
 
 handle_method('DELETE', Req) ->
   {Path, Req} = cowboy_http_req:path(Req),
-  {ok, Queue} = extract_queue_name(Path),
-  queue_delete(Queue),
+  {ok, Queues} = extract_queue_names(Path),
+  queue_delete(Queues),
 	cowboy_http_req:reply(200, headerswithtype(<<"text/plain">>), <<"deleted">>, Req).
 
 handle(Req, State) ->

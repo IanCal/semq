@@ -23,11 +23,19 @@
 init({_Any, http}, Req, []) ->
 	{ok, Req, undefined}.
 
+intersperse(_, []) -> [];
+intersperse(_, [X]) -> [X];
+intersperse(Sep, [X|Xs]) -> [X|[Sep|intersperse(Sep, Xs)]].
 
+format_queues([]) ->
+  <<"[]">>;
+
+format_queues(Queues) ->
+  [<<"[\"">>, intersperse(<<"\",\"">>, Queues), <<"\"]">>].
 
 handle(Req, State) ->
   {ok, Queues} =  frontend:get_all_queue_names(),
-  {ok, Req2} = cowboy_http_req:reply(200, [], io_lib:format(<<"~p~n">>, [Queues]), Req),
+  {ok, Req2} = cowboy_http_req:reply(200, [], format_queues(Queues), Req),
 	{ok, Req2, State}.
 
 terminate(_Req, _State) ->

@@ -33,6 +33,10 @@ format_queues({ok, []}) ->
 
 format_queues({ok, Queues}) ->
   [<<"The following queues are currently running:<br>">>, lists:map(fun semq_indexpage:format_queue/1, Queues)].
+
+get_version() ->
+  {ok, Vsn} = application:get_key(semq, vsn),
+  list_to_binary(Vsn).
   
 
 handle(Req, State) ->
@@ -41,7 +45,7 @@ handle(Req, State) ->
   <head>
   </head>
   <body>
-  Hooray! SEMQ is running correctly!<br>">>,
+  Hooray! SEMQ version ">>, get_version() ,<<" is running correctly!<br>">>,
   format_queues(frontend:get_all_queue_names()),
   <<"
   </body>
