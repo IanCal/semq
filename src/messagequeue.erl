@@ -67,6 +67,7 @@ queue(Messages) ->
 returnnextadd(Pid) ->
   receive
     {get, PidReturn} ->
+      Pid ! {error, new_client},
       returnnextadd(PidReturn);
     {add, Message} ->
       Pid ! {ok, Message},

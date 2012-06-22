@@ -2,7 +2,7 @@
 %% application.
 {application, semq,
   [{description, "A simple message queue implementation accessible via POST and GET with an extremely small API"},
-   {vsn, "0.2.4"},
+   {vsn, "0.2.5"},
    {modules, [semq_app,
               semq_sup]},
    {registered,[semq_sup]},

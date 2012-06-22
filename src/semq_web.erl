@@ -50,7 +50,8 @@ queue_get_head(Queue, Req) ->
                 frontend:removehead(Queue),
                 {ok, {Type, Message}, Req};
                _ ->
-                 error_logger:error_report(["client disconnected"])
+                 error_logger:error_report(["client disconnected"]),
+                {ok, {"text/plain", ""}, Req}
              end;
         {error, Reason} ->
             {error, Reason}
@@ -85,7 +86,13 @@ reply(Status, MimeType, Body, Req) ->
   cowboy_http_req:reply(Status2, headerswithtype(MimeType2), WrappedBody, Req2).
 
 headerswithtype(Mimetype) ->
- [{<<"Access-Control-Allow-Headers">>, <<"Content-Type">>}, {<<"Access-Control-Allow-Origin">>, <<"*">>}, {<<"Content-Type">>, Mimetype}].
+ [{<<"Access-Control-Allow-Headers">>, <<"Content-Type">>},
+ {<<"Access-Control-Allow-Origin">>, <<"*">>},
+ {<<"Content-Type">>, Mimetype},
+ {<<"Connection">>, <<"close">>},
+ {<<"Cache-Control">>, <<"max-age=0, no-cache, no-store, must-revalidate">>},
+ {<<"Pragma">>, <<"no-cache">>},
+ {<<"Expires">>, <<"Wed, 11 Jan 1984 05:00:00 GMT">>}].
   
 
 handle_method('GET', Req) ->
@@ -102,7 +109,7 @@ handle_method('POST', Req) ->
   {Path, Req} = cowboy_http_req:path(Req),
   {ok, Queues} = extract_queue_names(Path),
   {ok, {Type, Message}, Req2} = queue_post(Queues, Req),
-	cowboy_http_req:reply(200, headerswithtype(Type), Message, Req2);
+  cowboy_http_req:reply(200, headerswithtype(Type), Message, Req2);
 
 handle_method('HEAD', Req) ->
 	cowboy_http_req:reply(200, headerswithtype(<<"text/plain">>), <<"">>, Req);
